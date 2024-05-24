@@ -1,12 +1,28 @@
+using FishNet.Object;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
     public float speed = 5.0f;          // Movement speed
     public float mouseSensitivity = 2.0f;  // Mouse sensitivity for looking around
     public float verticalLookLimit = 80.0f; // Limit to how far the player can look up and down
+    
+    public GameObject camera;
 
     private float verticalRotation = 0;
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (IsOwner)
+        {
+            camera.SetActive(true);
+        }
+        else
+        {
+            GetComponent<PlayerController>().enabled = false;
+        }
+    }
 
     void Start()
     {
@@ -26,7 +42,7 @@ public class PlayerController : MonoBehaviour
         // Rotate the camera up and down
         verticalRotation -= mouseY;
         verticalRotation = Mathf.Clamp(verticalRotation, -verticalLookLimit, verticalLookLimit);
-        Camera.main.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
+        camera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
 
         // Movement
         float moveForwardBackward = Input.GetAxis("Vertical") * speed * Time.deltaTime;
