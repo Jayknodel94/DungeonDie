@@ -3,13 +3,28 @@ using UnityEngine;
 
 public class PlayerController : NetworkBehaviour
 {
-    public float speed = 5.0f;          // Movement speed
-    public float mouseSensitivity = 2.0f;  // Mouse sensitivity for looking around
-    public float verticalLookLimit = 80.0f; // Limit to how far the player can look up and down
-    
+    public Transform groundCheck;
+    public LayerMask groundMask;
     public GameObject camera;
 
-    private float verticalRotation = 0;
+    [Header("Movement Settings")]
+    public float walkSpeed = 5f;
+    public float runSpeed = 8f;
+    public float gravity = -19.62f;
+    public float groundDistance = 0.4f;
+    public float jumpHeight = 3f;
+    public float sprintIncrease = 1.3f;
+
+    [Header("Mouse Look Settings")]
+    public float mouseSensitivity = 2.0f;  // Mouse sensitivity for looking around
+    public float verticalLookLimit = 80.0f; // Limit to how far the player can look up and down
+
+    CharacterController controller;
+    Animator animator;
+    Vector3 velocity;
+    bool isGrounded;
+    float speed;
+    float verticalRotation = 0;
 
     public override void OnStartClient()
     {
@@ -28,9 +43,20 @@ public class PlayerController : NetworkBehaviour
     {
         // Lock the cursor
         Cursor.lockState = CursorLockMode.Locked;
+
+        controller = GetComponent<CharacterController>();
+        animator = GetComponent<Animator>();
+
+        speed = walkSpeed;
     }
 
     void Update()
+    {
+        Movement();
+        MouseLook();
+    }
+
+    private void MouseLook()
     {
         // Mouse look
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
@@ -43,12 +69,58 @@ public class PlayerController : NetworkBehaviour
         verticalRotation -= mouseY;
         verticalRotation = Mathf.Clamp(verticalRotation, -verticalLookLimit, verticalLookLimit);
         camera.transform.localRotation = Quaternion.Euler(verticalRotation, 0, 0);
+    }
 
-        // Movement
-        float moveForwardBackward = Input.GetAxis("Vertical") * speed * Time.deltaTime;
-        float moveLeftRight = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
+    private void Movement()
+    {
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
 
-        Vector3 move = transform.right * moveLeftRight + transform.forward * moveForwardBackward;
-        transform.position += move;
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
+
+        Vector3 move = transform.right * x + transform.forward * z;
+
+        HandleSprint();
+
+        controller.Move(speed * Time.deltaTime * move);
+
+        AnimateSpeed();
+        
+        HandleJumping();
+    }
+
+    private void HandleJumping()
+    {
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
+
+        velocity.y += gravity * Time.deltaTime;
+
+        controller.Move(velocity * Time.deltaTime);
+    }
+
+    private void HandleSprint()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            speed = runSpeed;
+        }
+        else if (Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            speed = walkSpeed;
+        }
+    }
+
+    private void AnimateSpeed()
+    {
+        float speedPercent = controller.velocity.magnitude / runSpeed;
+        animator.SetFloat("speed", speedPercent, .1f, Time.deltaTime);
     }
 }
