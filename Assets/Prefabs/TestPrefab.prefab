@@ -286,6 +286,12 @@ MonoBehaviour:
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 1282039682857868076}
   _networkObjectCache: {fileID: 1282039682857868076}
+  damage: 30
+  damageHeavy: 50
+  attackRange: 1
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!95 &5953663710255216921
 Animator:
   serializedVersion: 5
