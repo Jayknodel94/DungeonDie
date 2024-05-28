@@ -1,8 +1,22 @@
+using FishNet.Object;
 using UnityEngine;
 
-public class CombatController : MonoBehaviour
+public class CombatController : NetworkBehaviour
 {
     Animator animator;
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (IsOwner)
+        {
+            // nothing yet
+        }
+        else
+        {
+            GetComponent<CombatController>().enabled = false;
+        }
+    }
 
     void Start()
     {
@@ -13,11 +27,23 @@ public class CombatController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(Controls.Melee))
         {
-            animator.SetTrigger("melee");
+            AnimateMeleeServer(gameObject, "melee");
         }
         else if (Input.GetMouseButtonDown(Controls.MeleeHeavy))
         {
-            animator.SetTrigger("meleeHeavy");
+            AnimateMeleeServer(gameObject, "meleeHeavy");
         }
+    }
+
+    [ServerRpc]
+    public void AnimateMeleeServer(GameObject player, string meleeType)
+    {
+        AnimateMelee(player, meleeType);
+    }
+
+    [ObserversRpc]
+    void AnimateMelee(GameObject player, string meleeType)
+    {
+        player.GetComponent<Animator>().SetTrigger(meleeType);
     }
 }
