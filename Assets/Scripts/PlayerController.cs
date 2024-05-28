@@ -96,7 +96,7 @@ public class PlayerController : NetworkBehaviour
 
     private void HandleJumping()
     {
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if (Input.GetKeyDown(Controls.Jump) && isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
@@ -108,11 +108,11 @@ public class PlayerController : NetworkBehaviour
 
     private void HandleSprint()
     {
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        if (Input.GetKeyDown(Controls.Sprint))
         {
             speed = runSpeed;
         }
-        else if (Input.GetKeyUp(KeyCode.LeftShift))
+        else if (Input.GetKeyUp(Controls.Sprint))
         {
             speed = walkSpeed;
         }
