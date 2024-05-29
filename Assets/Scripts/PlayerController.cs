@@ -89,7 +89,7 @@ public class PlayerController : NetworkBehaviour
 
         controller.Move(speed * Time.deltaTime * move);
 
-        AnimateSpeed();
+        AnimateMovement();
         
         HandleJumping();
     }
@@ -118,7 +118,7 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    private void AnimateSpeed()
+    private void AnimateMovement()
     {
         float speedPercent = controller.velocity.magnitude / runSpeed;
         animator.SetFloat("speed", speedPercent, .1f, Time.deltaTime);

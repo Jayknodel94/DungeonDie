@@ -1,9 +1,19 @@
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
 
 public class CombatController : NetworkBehaviour
 {
+    private readonly SyncVar<int> health = new(100);
+    public int damage = 30;
+    public int damageHeavy = 50;
+    public float attackRange = 1f;
+
+    public LayerMask enemyLayer;
+
     Animator animator;
+
+    int maxHealth = 100;
 
     public override void OnStartClient()
     {
@@ -28,10 +38,27 @@ public class CombatController : NetworkBehaviour
         if (Input.GetMouseButtonDown(Controls.Melee))
         {
             AnimateMeleeServer(gameObject, "melee");
+            Attack(damage);
         }
         else if (Input.GetMouseButtonDown(Controls.MeleeHeavy))
         {
             AnimateMeleeServer(gameObject, "meleeHeavy");
+            Attack(damageHeavy);
+        }
+    }
+
+    void Attack(int damage)
+    {
+        // Detect enemies in range of the attack
+        Collider[] hitColliders = new Collider[10];
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, enemyLayer);
+
+        // Damage them
+        for (int i = 0; i < numColliders; i++)
+        {
+            Collider enemy = hitColliders[i];
+            enemy.TryGetComponent(out Enemy enemyScript);
+            enemyScript.UpdateHealthServer(enemy.gameObject, -damage);
         }
     }
 
@@ -44,6 +71,15 @@ public class CombatController : NetworkBehaviour
     [ObserversRpc]
     void AnimateMelee(GameObject player, string meleeType)
     {
+        // Don't try to trigger animation if already triggered
+        if (animator.GetBool("melee") || animator.GetBool("meleeHeavy")) return;
+
         player.GetComponent<Animator>().SetTrigger(meleeType);
+    }
+
+    [ServerRpc]
+    public void UpdateHealthServer(CombatController cc, int amountToChange)
+    {
+        cc.health.Value += amountToChange;
     }
 }
