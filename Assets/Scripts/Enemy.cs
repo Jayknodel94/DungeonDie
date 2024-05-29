@@ -1,3 +1,5 @@
+using FishNet;
+using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ public class Enemy : NetworkBehaviour
     int maxHealth = 100;
 
     NavMeshAgent agent;
-    List<Transform> players = new();
+    List<GameObject> players = new();
 
     public LayerMask groundMask, playerMask;
 
@@ -20,6 +22,11 @@ public class Enemy : NetworkBehaviour
     Vector3 walkPoint;
     bool walkPointSet;
     public float walkPointRange;
+    public float timeBetweenPatrols = 2f;
+
+    // chase
+    float closestPlayerDistance = Mathf.Infinity;
+    Transform closestPlayer = null;
 
     // attacking
     public float timeBetweenAttacks;
@@ -31,15 +38,7 @@ public class Enemy : NetworkBehaviour
 
     public void Awake()
     {
-        List<GameObject> playersGO = GameObject.FindGameObjectsWithTag("Player").ToList();
-        foreach (var player in playersGO)
-        {
-            players.Add(player.transform);
-        }
-
         agent = GetComponent<NavMeshAgent>();
-
-        // CHANGE TO GATHER PLAYERS WHEN THEY CONNECT
     }
 
     private void Update()
@@ -49,13 +48,17 @@ public class Enemy : NetworkBehaviour
         playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, playerMask);
 
         if (!playerInSightRange && !playerInAttackRange) Patrolling();
-        if (!playerInSightRange && !playerInAttackRange) ChasePlayer(players[0]); // TEMP!
-        if (!playerInSightRange && !playerInAttackRange) AttackPlayer(players[0]); // TEMP!
+        if (playerInSightRange && !playerInAttackRange) ChasePlayer();
+        if (playerInSightRange && playerInAttackRange) AttackPlayer();
     }
 
     void Patrolling()
     {
-        if (!walkPointSet) SearchWalkPoint();
+        // reset other states
+        closestPlayerDistance = Mathf.Infinity;
+        closestPlayer = null;
+
+        if (!walkPointSet) Invoke(nameof(SearchWalkPoint), timeBetweenPatrols); // NEEDS FINE TUNING
 
         if (walkPointSet)
             agent.SetDestination(walkPoint);
@@ -70,8 +73,8 @@ public class Enemy : NetworkBehaviour
     private void SearchWalkPoint()
     {
         // calculate random point in range
-        float randomZ = Random.Range(-walkPointRange, walkPointRange);
         float randomX = Random.Range(-walkPointRange, walkPointRange);
+        float randomZ = Random.Range(-walkPointRange, walkPointRange);
 
         walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
 
@@ -79,17 +82,62 @@ public class Enemy : NetworkBehaviour
             walkPointSet = true;
     }
 
-    void ChasePlayer(Transform playerInRange)
+    void ChasePlayer()
     {
-        agent.SetDestination(playerInRange.position);
+        // if no closest player yet, find him
+        if (closestPlayerDistance == Mathf.Infinity)
+        {
+            // Detect enemies in range of the attack
+            Collider[] hitColliders = new Collider[10];
+            int numColliders = Physics.OverlapSphereNonAlloc(transform.position, sightRange, hitColliders, playerMask);
+
+            for (int i = 0; i < numColliders; i++)
+            {
+                Collider player = hitColliders[i];
+
+                // determine distance
+                float distance = Vector3.Distance(player.transform.position, transform.position);
+                if (distance < closestPlayerDistance)
+                {
+                    closestPlayerDistance = distance;
+                    closestPlayer = player.transform;
+                }
+            }
+        }
+
+        agent.SetDestination(closestPlayer.position);
     }
 
-    void AttackPlayer(Transform playerInRange)
+    void AttackPlayer()
     {
+        closestPlayerDistance = Mathf.Infinity;
+
+        // if no closest player yet, find him
+        if (closestPlayer == null)
+        {
+            // Detect enemies in range of the attack
+            Collider[] hitColliders = new Collider[10];
+            int numColliders = Physics.OverlapSphereNonAlloc(transform.position, attackRange, hitColliders, playerMask);
+
+            for (int i = 0; i < numColliders; i++)
+            {
+                Collider player = hitColliders[i];
+
+                // determine distance
+                float distance = Vector3.Distance(player.transform.position, transform.position);
+                if (distance < closestPlayerDistance)
+                {
+                    closestPlayerDistance = distance;
+                    closestPlayer = player.transform;
+                }
+            }
+
+        }
+
         // make sure enemy doesn't move
         agent.SetDestination(transform.position);
 
-        transform.LookAt(playerInRange);
+        transform.LookAt(closestPlayer);
 
         if (!alreadyAttacked)
         {
@@ -124,5 +172,29 @@ public class Enemy : NetworkBehaviour
     public void DespawnEnemy(GameObject enemy)
     {
         ServerManager.Despawn(enemy);
+    }
+
+    // Add players who join
+    public override void OnSpawnServer(NetworkConnection connection)
+    {
+        base.OnSpawnServer(connection);
+
+        players = GameObject.FindGameObjectsWithTag("Player").ToList();
+    }
+
+    // Get rid of players who left
+    public override void OnDespawnServer(NetworkConnection connection)
+    {
+        base.OnDespawnServer(connection);
+
+        players = GameObject.FindGameObjectsWithTag("Player").ToList();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, sightRange);
     }
 }
