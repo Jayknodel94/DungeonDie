@@ -360,6 +360,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!195 &1285788849
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1285788842}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 1.73
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &1766458072
 GameObject:
   m_ObjectHideFlags: 0
@@ -493,17 +515,33 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 4681382466705489909, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      propertyPath: groundMask.m_Bits
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 4681382466705489909, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      propertyPath: playerMask.m_Bits
+      value: 256
+      objectReference: {fileID: 0}
+    - target: {fileID: 4681382466705489909, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       propertyPath: _addedNetworkObject
       value: 
       objectReference: {fileID: 1285788845}
     - target: {fileID: 4681382466705489909, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       propertyPath: _networkObjectCache
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1285788845}
     - target: {fileID: 5791104648039220123, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       propertyPath: _addedNetworkObject
       value: 
       objectReference: {fileID: 1285788845}
+    - target: {fileID: 5791104648039220123, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      propertyPath: _networkObjectCache
+      value: 
+      objectReference: {fileID: 1285788845}
+    - target: {fileID: 5791104648039220123, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      propertyPath: _componentIndexCache
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 5951554096865822525, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -576,6 +614,14 @@ PrefabInstance:
       propertyPath: _addedNetworkObject
       value: 
       objectReference: {fileID: 1285788845}
+    - target: {fileID: 8119140642965093682, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      propertyPath: _networkObjectCache
+      value: 
+      objectReference: {fileID: 1285788845}
+    - target: {fileID: 8119140642965093682, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      propertyPath: _componentIndexCache
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -583,6 +629,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6472792274584804743, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1285788845}
+    - targetCorrespondingSourceObject: {fileID: 6472792274584804743, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1285788849}
   m_SourcePrefab: {fileID: 100100000, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
 --- !u!114 &8358822903604714945
 MonoBehaviour:

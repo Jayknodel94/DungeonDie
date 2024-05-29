@@ -47,7 +47,7 @@ public class CombatController : NetworkBehaviour
         }
     }
 
-    void Attack(int damage)
+    public void Attack(int damage)
     {
         // Detect enemies in range of the attack
         Collider[] hitColliders = new Collider[10];
@@ -65,15 +65,15 @@ public class CombatController : NetworkBehaviour
     [ServerRpc]
     public void AnimateMeleeServer(GameObject player, string meleeType)
     {
+        // Don't try to trigger animation if already triggered
+        if (animator.GetBool("melee") || animator.GetBool("meleeHeavy")) return;
+
         AnimateMelee(player, meleeType);
     }
 
     [ObserversRpc]
     void AnimateMelee(GameObject player, string meleeType)
     {
-        // Don't try to trigger animation if already triggered
-        if (animator.GetBool("melee") || animator.GetBool("meleeHeavy")) return;
-
         player.GetComponent<Animator>().SetTrigger(meleeType);
     }
 
