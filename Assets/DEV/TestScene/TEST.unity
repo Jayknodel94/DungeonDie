@@ -533,17 +533,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 4681382466705489909, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
-      propertyPath: sightRange
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4681382466705489909, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
-      propertyPath: walkPointRange
-      value: 10
-      objectReference: {fileID: 0}
     - target: {fileID: 5116092082904252764, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       propertyPath: <SceneId>k__BackingField
-      value: 12649375689765527711
+      value: 12649375691006923034
       objectReference: {fileID: 0}
     - target: {fileID: 5951554096865822525, guid: 75ed1326eb5b36c41a49f4d2a5d3cdc4, type: 3}
       propertyPath: m_LocalPosition.x

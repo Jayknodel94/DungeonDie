@@ -1,7 +1,7 @@
-using FishNet;
 using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,9 +11,10 @@ public class Enemy : NetworkBehaviour
 {
     private readonly SyncVar<int> health = new(100);
 
-    int maxHealth = 100;
+    readonly int maxHealth = 100;
 
     NavMeshAgent agent;
+    Animator animator;
     List<GameObject> players = new();
 
     public LayerMask groundMask, playerMask;
@@ -36,9 +37,12 @@ public class Enemy : NetworkBehaviour
     public float sightRange, attackRange;
     bool playerInSightRange, playerInAttackRange;
 
+    float timer = 0f;
+
     public void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
     }
 
     private void Update()
@@ -50,6 +54,14 @@ public class Enemy : NetworkBehaviour
         if (!playerInSightRange && !playerInAttackRange) Patrolling();
         if (playerInSightRange && !playerInAttackRange) ChasePlayer();
         if (playerInSightRange && playerInAttackRange) AttackPlayer();
+
+        AnimateMovement();
+    }
+
+    private void AnimateMovement()
+    {
+        float speedPercent = agent.velocity.magnitude / agent.speed;
+        animator.SetFloat("speed", speedPercent, .1f, Time.deltaTime);
     }
 
     void Patrolling()
@@ -58,16 +70,29 @@ public class Enemy : NetworkBehaviour
         closestPlayerDistance = Mathf.Infinity;
         closestPlayer = null;
 
-        if (!walkPointSet) Invoke(nameof(SearchWalkPoint), timeBetweenPatrols); // NEEDS FINE TUNING
+        if (!walkPointSet)
+        {
+            SearchWalkPoint();
+        }
 
         if (walkPointSet)
+        {
             agent.SetDestination(walkPoint);
+        }
 
         Vector3 distanceToWalkPoint = transform.position - walkPoint;
 
         // walkpoint reached
-        if (distanceToWalkPoint.magnitude < 1f)
-            walkPointSet = false;
+        if (distanceToWalkPoint.magnitude < 1f && walkPointSet)
+        {
+            timer += Time.deltaTime;
+
+            if (timer >= timeBetweenPatrols)
+            {
+                walkPointSet = false;
+                timer = 0f;
+            }
+        }
     }
 
     private void SearchWalkPoint()
@@ -188,6 +213,12 @@ public class Enemy : NetworkBehaviour
         base.OnDespawnServer(connection);
 
         players = GameObject.FindGameObjectsWithTag("Player").ToList();
+    }
+
+    IEnumerator WaitToWalk(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        walkPointSet = false;
     }
 
     private void OnDrawGizmosSelected()

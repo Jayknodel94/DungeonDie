@@ -13,7 +13,7 @@ public class CombatController : NetworkBehaviour
 
     Animator animator;
 
-    int maxHealth = 100;
+    readonly int maxHealth = 100;
 
     public override void OnStartClient()
     {
