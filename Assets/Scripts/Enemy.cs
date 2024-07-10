@@ -1,7 +1,7 @@
 using FishNet.Connection;
+using FishNet.Demo.AdditiveScenes;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -48,14 +48,56 @@ public class Enemy : NetworkBehaviour
     private void Update()
     {
         // check for sight and attack range
-        playerInSightRange = Physics.CheckSphere(transform.position, sightRange, playerMask);
-        playerInAttackRange = Physics.CheckSphere(transform.position, attackRange, playerMask);
+        playerInSightRange = CheckIfPlayerIsInSight();
+        playerInAttackRange = CheckIfPlayerIsInAttackRange();
 
         if (!playerInSightRange && !playerInAttackRange) Patrolling();
         if (playerInSightRange && !playerInAttackRange) ChasePlayer();
         if (playerInSightRange && playerInAttackRange) AttackPlayer();
 
         AnimateMovement();
+    }
+
+    private bool CheckIfPlayerIsInSight()
+    {
+        int maxColliders = 10;
+        Collider[] hitColliders = new Collider[maxColliders];
+        int numColliders = Physics.OverlapSphereNonAlloc(transform.position, sightRange, hitColliders);
+
+        foreach (Collider collider in hitColliders)
+        {
+            if (collider == null) continue;
+
+            if (collider.CompareTag("Player"))
+            {
+                // Calculate direction towards the player
+                Vector3 direction = collider.bounds.center - transform.position;
+
+                Debug.DrawRay(transform.position, direction);
+
+                // Perform raycast to detect obstacles or the player
+                bool hasSightline = Physics.Raycast(transform.position, direction, out RaycastHit hit, sightRange);
+
+                if (hit.collider == null) continue;
+
+                // Check if the ray hits the player and there are no obstacles in between
+                if (hasSightline && hit.collider.CompareTag("Player"))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool CheckIfPlayerIsInAttackRange()
+    {
+        if (Physics.CheckSphere(transform.position, attackRange, playerMask))
+        {
+            return true;
+        }
+        else return false;
     }
 
     private void AnimateMovement()
@@ -67,6 +109,11 @@ public class Enemy : NetworkBehaviour
     void Patrolling()
     {
         // reset other states
+        if (closestPlayer != null)
+        {
+            walkPoint = closestPlayer.transform.position;
+        }
+
         closestPlayerDistance = Mathf.Infinity;
         closestPlayer = null;
 
@@ -95,6 +142,7 @@ public class Enemy : NetworkBehaviour
         }
     }
 
+    // MAY HAVE TO MAKE NETWORKED FUNCTION
     private void SearchWalkPoint()
     {
         // calculate random point in range
@@ -156,7 +204,6 @@ public class Enemy : NetworkBehaviour
                     closestPlayer = player.transform;
                 }
             }
-
         }
 
         // make sure enemy doesn't move
@@ -213,12 +260,6 @@ public class Enemy : NetworkBehaviour
         base.OnDespawnServer(connection);
 
         players = GameObject.FindGameObjectsWithTag("Player").ToList();
-    }
-
-    IEnumerator WaitToWalk(float seconds)
-    {
-        yield return new WaitForSeconds(seconds);
-        walkPointSet = false;
     }
 
     private void OnDrawGizmosSelected()
