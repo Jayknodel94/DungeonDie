@@ -1,5 +1,4 @@
 using FishNet.Connection;
-using FishNet.Demo.AdditiveScenes;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using System.Collections.Generic;
@@ -64,6 +63,7 @@ public class Enemy : NetworkBehaviour
         Collider[] hitColliders = new Collider[maxColliders];
         int numColliders = Physics.OverlapSphereNonAlloc(transform.position, sightRange, hitColliders);
 
+        // Line of sight logic
         foreach (Collider collider in hitColliders)
         {
             if (collider == null) continue;
@@ -108,7 +108,9 @@ public class Enemy : NetworkBehaviour
 
     void Patrolling()
     {
-        // reset other states
+        print("patrolling");
+
+        // START: Makes sure it looks for closest player all the time (probably not the best)
         if (closestPlayer != null)
         {
             walkPoint = closestPlayer.transform.position;
@@ -116,16 +118,9 @@ public class Enemy : NetworkBehaviour
 
         closestPlayerDistance = Mathf.Infinity;
         closestPlayer = null;
+        // END
 
-        if (!walkPointSet)
-        {
-            SearchWalkPoint();
-        }
-
-        if (walkPointSet)
-        {
-            agent.SetDestination(walkPoint);
-        }
+        SetWalkpointServer();
 
         Vector3 distanceToWalkPoint = transform.position - walkPoint;
 
@@ -142,9 +137,24 @@ public class Enemy : NetworkBehaviour
         }
     }
 
-    // MAY HAVE TO MAKE NETWORKED FUNCTION
-    private void SearchWalkPoint()
+    [ServerRpc(RequireOwnership = false)]
+    private void SetWalkpointServer()
     {
+        if (!walkPointSet)
+        {
+            SearchWalkPoint();
+        }
+
+        if (walkPointSet)
+        {
+            TellEnemyWhereToGoServer(walkPoint);
+        }
+    }
+
+    void SearchWalkPoint()
+    {
+        print("Searching for walk point");
+
         // calculate random point in range
         float randomX = Random.Range(-walkPointRange, walkPointRange);
         float randomZ = Random.Range(-walkPointRange, walkPointRange);
@@ -157,6 +167,8 @@ public class Enemy : NetworkBehaviour
 
     void ChasePlayer()
     {
+        print("Chasing");
+
         // if no closest player yet, find him
         if (closestPlayerDistance == Mathf.Infinity)
         {
@@ -178,11 +190,13 @@ public class Enemy : NetworkBehaviour
             }
         }
 
-        agent.SetDestination(closestPlayer.position);
+        TellEnemyWhereToGoServer(closestPlayer.position);
     }
 
     void AttackPlayer()
     {
+        print("Attacking");
+
         closestPlayerDistance = Mathf.Infinity;
 
         // if no closest player yet, find him
@@ -207,7 +221,7 @@ public class Enemy : NetworkBehaviour
         }
 
         // make sure enemy doesn't move
-        agent.SetDestination(transform.position);
+        TellEnemyWhereToGoServer(transform.position);
 
         transform.LookAt(closestPlayer);
 
@@ -221,6 +235,12 @@ public class Enemy : NetworkBehaviour
     private void ResetAttack()
     {
         alreadyAttacked = false;
+    }
+    
+    [ServerRpc(RequireOwnership = false)]
+    private void TellEnemyWhereToGoServer(Vector3 position)
+    {
+        agent.SetDestination(position);
     }
 
     [ServerRpc(RequireOwnership = false, RunLocally = true)]
