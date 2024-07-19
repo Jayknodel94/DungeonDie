@@ -5,7 +5,7 @@ public class PlayerController : NetworkBehaviour
 {
     public Transform groundCheck;
     public LayerMask groundMask;
-    public GameObject camera;
+    public new GameObject camera;
 
     [Header("Movement Settings")]
     public float walkSpeed = 5f;
