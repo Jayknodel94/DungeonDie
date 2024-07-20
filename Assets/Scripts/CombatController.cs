@@ -35,12 +35,12 @@ public class CombatController : NetworkBehaviour
     {
         if (Input.GetMouseButtonDown(Controls.Melee))
         {
-            AnimateMeleeServer(gameObject, "melee");
+            AnimateMeleeServer("melee");
             Attack(damage);
         }
         else if (Input.GetMouseButtonDown(Controls.MeleeHeavy))
         {
-            AnimateMeleeServer(gameObject, "meleeHeavy");
+            AnimateMeleeServer("meleeHeavy");
             Attack(damageHeavy);
         }
     }
@@ -56,28 +56,42 @@ public class CombatController : NetworkBehaviour
         {
             Collider enemy = hitColliders[i];
             enemy.TryGetComponent(out Enemy enemyScript);
-            enemyScript.UpdateHealthServer(enemy.gameObject, -damage);
+            enemyScript.UpdateHealthServer(-damage);
         }
     }
 
     [ServerRpc]
-    public void AnimateMeleeServer(GameObject player, string meleeType)
+    public void AnimateMeleeServer(string meleeType)
     {
         // Don't try to trigger animation if already triggered
         if (animator.GetBool("melee") || animator.GetBool("meleeHeavy")) return;
 
-        AnimateMelee(player, meleeType);
+        AnimateMelee(meleeType);
     }
 
     [ObserversRpc]
-    void AnimateMelee(GameObject player, string meleeType)
+    void AnimateMelee(string meleeType)
     {
-        player.GetComponent<Animator>().SetTrigger(meleeType);
+        animator.SetTrigger(meleeType);
     }
 
     [ServerRpc]
-    public void UpdateHealthServer(CombatController cc, int amountToChange)
+    public void UpdateHealthServer(int amountToChange)
     {
-        cc.health.Value += amountToChange;
+        health.Value += amountToChange;
+
+        print($"{this.name}'s health: {health.Value}");
+
+        if (health.Value <= 0)
+        {
+            DespawnPlayer(gameObject);
+        }
+    }
+
+    // Player dies
+    [ServerRpc(RequireOwnership = false)]
+    public void DespawnPlayer(GameObject player)
+    {
+        ServerManager.Despawn(player);
     }
 }
