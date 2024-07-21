@@ -30,6 +30,8 @@ public class Enemy : NetworkBehaviour
 
     // attacking
     public float timeBetweenAttacks;
+    public int attackDamage = 20;
+    public int heavyAttackDamage = 30;
     bool alreadyAttacked;
 
     // states
@@ -42,6 +44,9 @@ public class Enemy : NetworkBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+
+        // To make sure agent doesn't go closer than the attack range
+        agent.stoppingDistance = attackRange;
     }
 
     private void Update()
@@ -108,8 +113,6 @@ public class Enemy : NetworkBehaviour
 
     void Patrolling()
     {
-        print("patrolling");
-
         // START: Makes sure it looks for closest player all the time (probably not the best)
         if (closestPlayer != null)
         {
@@ -118,7 +121,7 @@ public class Enemy : NetworkBehaviour
 
         closestPlayerDistance = Mathf.Infinity;
         closestPlayer = null;
-        // END
+        // END -----------
 
         SetWalkpointServer();
 
@@ -153,8 +156,6 @@ public class Enemy : NetworkBehaviour
 
     void SearchWalkPoint()
     {
-        print("Searching for walk point");
-
         // calculate random point in range
         float randomX = Random.Range(-walkPointRange, walkPointRange);
         float randomZ = Random.Range(-walkPointRange, walkPointRange);
@@ -167,8 +168,6 @@ public class Enemy : NetworkBehaviour
 
     void ChasePlayer()
     {
-        print("Chasing");
-
         // if no closest player yet, find him
         if (closestPlayerDistance == Mathf.Infinity)
         {
@@ -195,8 +194,6 @@ public class Enemy : NetworkBehaviour
 
     void AttackPlayer()
     {
-        print("Attacking");
-
         closestPlayerDistance = Mathf.Infinity;
 
         // if no closest player yet, find him
@@ -220,16 +217,51 @@ public class Enemy : NetworkBehaviour
             }
         }
 
-        // make sure enemy doesn't move
-        TellEnemyWhereToGoServer(transform.position);
-
         transform.LookAt(closestPlayer);
 
+        // Do the attack!
         if (!alreadyAttacked)
         {
             alreadyAttacked = true;
+
+            // Attack animation and damage
+            DecideAttackType();
+
+            // Rest? between attacks
             Invoke(nameof(ResetAttack), timeBetweenAttacks);
         }
+    }
+
+    private void DecideAttackType()
+    {
+        float randomNum = Random.Range(0f, 1f);
+
+        switch (randomNum)
+        {
+            case > .25f: // light attack
+                AnimateMeleeServer("melee");
+                closestPlayer.GetComponent<CombatController>().UpdateHealthServer(-attackDamage);
+                break;
+            default: // heavy attack
+                AnimateMeleeServer("meleeHeavy");
+                closestPlayer.GetComponent<CombatController>().UpdateHealthServer(-heavyAttackDamage);
+                break;
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void AnimateMeleeServer(string meleeType)
+    {
+        // Don't try to trigger animation if already triggered
+        if (animator.GetBool("melee") || animator.GetBool("meleeHeavy")) return;
+
+        AnimateMelee(meleeType);
+    }
+
+    [ObserversRpc]
+    void AnimateMelee(string meleeType)
+    {
+        animator.SetTrigger(meleeType);
     }
 
     private void ResetAttack()
@@ -244,22 +276,25 @@ public class Enemy : NetworkBehaviour
     }
 
     [ServerRpc(RequireOwnership = false, RunLocally = true)]
-    public void UpdateHealthServer(GameObject enemy, int amountToChange)
+    public void UpdateHealthServer(int amountToChange)
     {
-        UpdateHealth(enemy, amountToChange);
+        UpdateHealth(amountToChange);
     }
 
     [ObserversRpc]
-    void UpdateHealth(GameObject enemy, int amountToChange)
+    void UpdateHealth(int amountToChange)
     {
-        enemy.GetComponent<Enemy>().health.Value += amountToChange;
+        health.Value += amountToChange;
 
-        if (enemy.GetComponent<Enemy>().health.Value <= 0)
+        print($"{this.name}'s health: {health.Value}");
+
+        if (health.Value <= 0)
         {
-            DespawnEnemy(enemy);
+            DespawnEnemy(gameObject);
         }
     }
 
+    // Enemy dies
     [ServerRpc(RequireOwnership = false)]
     public void DespawnEnemy(GameObject enemy)
     {
