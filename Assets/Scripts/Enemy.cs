@@ -236,21 +236,15 @@ public class Enemy : NetworkBehaviour
     {
         float randomNum = Random.Range(0f, 1f);
 
-        print(randomNum);
-
         switch (randomNum)
         {
-            case > .25f:
+            case > .25f: // light attack
                 AnimateMeleeServer("melee");
                 closestPlayer.GetComponent<CombatController>().UpdateHealthServer(-attackDamage);
-
-                print("light attack");
                 break;
-            default:
+            default: // heavy attack
                 AnimateMeleeServer("meleeHeavy");
                 closestPlayer.GetComponent<CombatController>().UpdateHealthServer(-heavyAttackDamage);
-                
-                print("HEAVY ATTACK");
                 break;
         }
     }

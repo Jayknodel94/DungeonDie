@@ -8,10 +8,13 @@ public class CombatController : NetworkBehaviour
     public int damage = 30;
     public int damageHeavy = 50;
     public float attackRange = 1f;
+    public float timeBetweenAttacks = 1f;
 
     public LayerMask enemyLayer;
 
     Animator animator;
+
+    bool alreadyAttacked = false;
 
     public override void OnStartClient()
     {
@@ -54,10 +57,24 @@ public class CombatController : NetworkBehaviour
         // Damage them
         for (int i = 0; i < numColliders; i++)
         {
-            Collider enemy = hitColliders[i];
-            enemy.TryGetComponent(out Enemy enemyScript);
-            enemyScript.UpdateHealthServer(-damage);
+            // Do the attack!
+            if (!alreadyAttacked)
+            {
+                alreadyAttacked = true;
+
+                Collider enemy = hitColliders[i];
+                enemy.TryGetComponent(out Enemy enemyScript);
+                enemyScript.UpdateHealthServer(-damage);
+
+                // Rest? between attacks
+                Invoke(nameof(ResetAttack), timeBetweenAttacks);
+            }
         }
+    }
+
+    private void ResetAttack()
+    {
+        alreadyAttacked = false;
     }
 
     [ServerRpc]
