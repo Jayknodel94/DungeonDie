@@ -6,6 +6,7 @@ public class PlayerController : NetworkBehaviour
     public Transform groundCheck;
     public LayerMask groundMask;
     public new GameObject camera;
+    public GameObject UI;
 
     [Header("Movement Settings")]
     public float walkSpeed = 5f;
@@ -32,10 +33,11 @@ public class PlayerController : NetworkBehaviour
         if (IsOwner)
         {
             camera.SetActive(true);
-        }
-        else
-        {
-            GetComponent<PlayerController>().enabled = false;
+            UI.SetActive(true);
+
+            GetComponent<PlayerController>().enabled = true;
+            GetComponent<CombatController>().enabled = true;
+            UI.GetComponent<PlayerUiController>().enabled = true;
         }
     }
 
