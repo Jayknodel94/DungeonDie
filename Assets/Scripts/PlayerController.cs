@@ -20,6 +20,8 @@ public class PlayerController : NetworkBehaviour
     public float mouseSensitivity = 2.0f;  // Mouse sensitivity for looking around
     public float verticalLookLimit = 80.0f; // Limit to how far the player can look up and down
 
+    public bool canLook = true;
+
     CharacterController controller;
     Animator animator;
     Vector3 velocity;
@@ -45,6 +47,7 @@ public class PlayerController : NetworkBehaviour
     {
         // Lock the cursor
         Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         controller = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
@@ -55,7 +58,7 @@ public class PlayerController : NetworkBehaviour
     void Update()
     {
         Movement();
-        MouseLook();
+        if (canLook) MouseLook();
     }
 
     private void MouseLook()
