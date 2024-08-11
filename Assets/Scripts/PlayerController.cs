@@ -1,4 +1,5 @@
 using FishNet.Object;
+using System;
 using UnityEngine;
 
 public class PlayerController : NetworkBehaviour
@@ -6,7 +7,7 @@ public class PlayerController : NetworkBehaviour
     public Transform groundCheck;
     public LayerMask groundMask;
     public new GameObject camera;
-    public GameObject UI;
+    public GameObject UI_GameObject;
 
     [Header("Movement Settings")]
     public float walkSpeed = 5f;
@@ -20,9 +21,13 @@ public class PlayerController : NetworkBehaviour
     public float mouseSensitivity = 2.0f;  // Mouse sensitivity for looking around
     public float verticalLookLimit = 80.0f; // Limit to how far the player can look up and down
 
+    [Header("Interaction Settings")]
+    public float interactionRange = 3f; // How far away from the player an item can be interacted with
+
     public bool canLook = true;
 
     CharacterController controller;
+    PlayerUiController playerUiController;
     Animator animator;
     Vector3 velocity;
     bool isGrounded;
@@ -35,11 +40,13 @@ public class PlayerController : NetworkBehaviour
         if (IsOwner)
         {
             camera.SetActive(true);
-            UI.SetActive(true);
+            UI_GameObject.SetActive(true);
 
             GetComponent<PlayerController>().enabled = true;
             GetComponent<CombatController>().enabled = true;
-            UI.GetComponent<PlayerUiController>().enabled = true;
+            UI_GameObject.GetComponent<PlayerUiController>().enabled = true;
+
+            playerUiController = UI_GameObject.GetComponent<PlayerUiController>();
         }
     }
 
@@ -59,6 +66,34 @@ public class PlayerController : NetworkBehaviour
     {
         Movement();
         if (canLook) MouseLook();
+
+        HandleInteraction();
+    }
+
+    private void HandleInteraction()
+    {
+        if (Input.GetKeyDown(Controls.Interact)) // E
+        {
+            // did you hit anything?
+            if (Physics.Raycast(camera.transform.position, camera.transform.forward, out RaycastHit hit, interactionRange))
+
+                print(hit.transform.name);
+            {
+                // did we hit an Item?
+                if (hit.collider && hit.transform.TryGetComponent<Item>(out Item item))
+                {
+                    // do we have room in our inventory?
+                    if (playerUiController.GetRoomInInventory() > 0)
+                    {
+                        // add item to inventory
+                        playerUiController.AddItemToInventory(item);
+
+                        // delete item from ground
+                        DespawnItem(item.gameObject);
+                    }
+                }
+            }
+        }
     }
 
     private void MouseLook()
@@ -127,5 +162,11 @@ public class PlayerController : NetworkBehaviour
     {
         float speedPercent = controller.velocity.magnitude / runSpeed;
         animator.SetFloat("speed", speedPercent, .1f, Time.deltaTime);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void DespawnItem(GameObject item)
+    {
+        ServerManager.Despawn(item);
     }
 }

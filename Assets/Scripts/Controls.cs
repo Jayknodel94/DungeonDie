@@ -6,6 +6,7 @@ public class Controls : MonoBehaviour
     public static KeyCode Jump = KeyCode.Space;
     public static KeyCode Sprint = KeyCode.LeftShift;
     public static KeyCode OpenInventory = KeyCode.Tab;
+    public static KeyCode Interact = KeyCode.E;
 
     // Mouse
     public static int Melee = 0;
